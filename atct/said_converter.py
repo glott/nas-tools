@@ -71,7 +71,6 @@ asdex_facilities = sorted(list(set(asdex_facilities)))
 
 print(f"  [+] Successfully processed {len(artcc_list)} ARTCC files.\n")
 
-# Use textwrap to neatly align facility codes if they bleed past a standard console width
 wrapper = textwrap.TextWrapper(width=65, initial_indent="      ", subsequent_indent="      ")
 
 print(f"  >>> SAID-ENABLED FACILITIES ({len(said_facilities)}):")
@@ -196,7 +195,37 @@ if os.path.exists(profiles_dir):
                             is_in_asdex = facility_id in asdex_facilities
 
                             if is_in_saids and not is_in_asdex:
+                                # 1. Update the display type metadata
                                 display["$type"] = "Vatsim.Nas.Crc.Ui.Displays.SaabSaid.Settings.SaabSaidDisplaySettings, CRC"
+                                
+                                # 2. Strip non-SAID compatible properties from the main object
+                                display.pop("ActivePositionIds", None)
+                                display.pop("Volume", None)
+
+                                # 3. Remap individual display window components
+                                pref_set = display.get("CurrentPrefSet", {})
+                                inner_windows = pref_set.get("Windows", [])
+                                
+                                for win in inner_windows:
+                                    if win.get("DisplayType") == "Asdex":
+                                        win["DisplayType"] = "SaabSaid"
+                                    
+                                    # Structure rebuilding to inject elements in schema order
+                                    new_win_layout = {}
+                                    for key, value in win.items():
+                                        new_win_layout[key] = value
+                                        
+                                        # Inject after EnableAntiAliasing
+                                        if key == "EnableAntiAliasing":
+                                            new_win_layout["ShowRangeRings"] = False
+                                            new_win_layout["RangeRingsScale"] = 2
+                                            
+                                        # Inject after LeaderLength
+                                        if key == "LeaderLength":
+                                            new_win_layout["LabelDeconflictEnabled"] = True
+                                            
+                                    win.clear()
+                                    win.update(new_win_layout)
 
                                 if facility_id not in profile_changes:
                                     profile_changes.append(facility_id)
@@ -217,12 +246,14 @@ if os.path.exists(profiles_dir):
                 except Exception as e:
                     pass
 
-        max_mod_len = max(len(name) for name in all_modified_profiles.keys())
-
-        print("\n  >>> SAID replacements complete:")
-        for prof_name, changes in all_modified_profiles.items():
-            print(f"      {prof_name:<{max_mod_len + 2}}{changes}")
-        print("  [+] Status: Successfully updated all matching profiles.")
+        if all_modified_profiles:
+            max_mod_len = max(len(name) for name in all_modified_profiles.keys())
+            print("\n  >>> SAID replacements complete:")
+            for prof_name, changes in all_modified_profiles.items():
+                print(f"      {prof_name:<{max_mod_len + 2}}{changes}")
+            print("  [+] Status: Successfully updated all matching profiles.")
+        else:
+            print("  [+] Status: Process finished, but no configurations required actual updates.")
 
 else:
     print(f"\n  [-] Error: Could not open profiles directory: {profiles_dir}")
@@ -235,4 +266,4 @@ for remaining in range(15, 0, -1):
     sys.stdout.write(f"\r  Closing in {remaining} seconds...")
     sys.stdout.flush()
     time.sleep(1)
-print("\r  Done.                                                ")
+print("\r  Done.                                                         ")
