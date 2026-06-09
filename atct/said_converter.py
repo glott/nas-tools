@@ -93,7 +93,7 @@ print()
 print("[STEP 2/3] Creating safety backup of your current CRC profiles and prefsets...")
 
 profiles_dir = os.path.expandvars(r"%localappdata%\CRC\Profiles")
-prefsets_dir = os.path.expandvars(r"%localappdata%\CRC\PrefSets")
+prefsets_base_dir = os.path.expandvars(r"%localappdata%\CRC\PrefSets")
 
 timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 zip_filename = f"CRC Backup {timestamp}"
@@ -101,7 +101,6 @@ temp_backup_dir = os.path.join(os.path.expandvars("%temp%"), f"CRC_Backup_Stagin
 destination_zip_path = os.path.join(os.path.expandvars("%temp%"), zip_filename)
 
 try:
-    # Create a fresh temporary folder to aggregate directories for the zip archive
     os.makedirs(temp_backup_dir, exist_ok=True)
     
     profiles_copied = False
@@ -113,11 +112,11 @@ try:
     else:
         print(f"  [!] WARNING: Profiles directory not found at {profiles_dir}")
 
-    if os.path.exists(prefsets_dir):
-        shutil.copytree(prefsets_dir, os.path.join(temp_backup_dir, "PrefSets"))
+    if os.path.exists(prefsets_base_dir):
+        shutil.copytree(prefsets_base_dir, os.path.join(temp_backup_dir, "PrefSets"))
         prefsets_copied = True
     else:
-        print(f"  [!] WARNING: PrefSets directory not found at {prefsets_dir}")
+        print(f"  [!] WARNING: PrefSets directory not found at {prefsets_base_dir}")
 
     if profiles_copied or prefsets_copied:
         shutil.make_archive(destination_zip_path, "zip", temp_backup_dir)
@@ -126,7 +125,6 @@ try:
         print("  [-] ERROR: Neither Profiles nor PrefSets directories were found. Backup aborted.\n")
 
 finally:
-    # Always clean up the temporary staging folder
     if os.path.exists(temp_backup_dir):
         shutil.rmtree(temp_backup_dir)
 
@@ -202,7 +200,28 @@ if os.path.exists(profiles_dir):
 
     if run_replacement:
         all_modified_profiles = {}
+        processed_facilities = set()
 
+        # Helper function to sort schema updates onto window components
+        def update_window_schema(win):
+            if win.get("DisplayType") == "Asdex":
+                win["DisplayType"] = "SaabSaid"
+            
+            new_win_layout = {}
+            for key, value in win.items():
+                new_win_layout[key] = value
+                
+                if key == "EnableAntiAliasing":
+                    new_win_layout["ShowRangeRings"] = False
+                    new_win_layout["RangeRingsScale"] = 2
+                    
+                if key == "LeaderLength":
+                    new_win_layout["LabelDeconflictEnabled"] = True
+                    
+            win.clear()
+            win.update(new_win_layout)
+
+        # Process the CRC Main Profiles
         for filename, (file_path, profile) in loaded_profiles.items():
             profile_name = profile.get("Name", "Unknown Profile")
             display_window_settings = profile.get("DisplayWindowSettings", [])
@@ -221,37 +240,18 @@ if os.path.exists(profiles_dir):
                             is_in_asdex = facility_id in asdex_facilities
 
                             if is_in_saids and not is_in_asdex:
-                                # 1. Update the display type metadata
-                                display["$type"] = "Vatsim.Nas.Crc.Ui.Displays.SaabSaid.Settings.SaabSaidDisplaySettings, CRC"
+                                processed_facilities.add(facility_id)
                                 
-                                # 2. Strip non-SAID compatible properties from the main object
+                                # 1. Main display modifications
+                                display["$type"] = "Vatsim.Nas.Crc.Ui.Displays.SaabSaid.Settings.SaabSaidDisplaySettings, CRC"
                                 display.pop("ActivePositionIds", None)
                                 display.pop("Volume", None)
 
-                                # 3. Remap individual display window components
+                                # 2. Profile inner windows modification
                                 pref_set = display.get("CurrentPrefSet", {})
                                 inner_windows = pref_set.get("Windows", [])
-                                
                                 for win in inner_windows:
-                                    if win.get("DisplayType") == "Asdex":
-                                        win["DisplayType"] = "SaabSaid"
-                                    
-                                    # Structure rebuilding to inject elements in schema order
-                                    new_win_layout = {}
-                                    for key, value in win.items():
-                                        new_win_layout[key] = value
-                                        
-                                        # Inject after EnableAntiAliasing
-                                        if key == "EnableAntiAliasing":
-                                            new_win_layout["ShowRangeRings"] = False
-                                            new_win_layout["RangeRingsScale"] = 2
-                                            
-                                        # Inject after LeaderLength
-                                        if key == "LeaderLength":
-                                            new_win_layout["LabelDeconflictEnabled"] = True
-                                            
-                                    win.clear()
-                                    win.update(new_win_layout)
+                                    update_window_schema(win)
 
                                 if facility_id not in profile_changes:
                                     profile_changes.append(facility_id)
@@ -272,12 +272,52 @@ if os.path.exists(profiles_dir):
                 except Exception as e:
                     pass
 
+        # Process any linked PrefSets directory changes
+        if processed_facilities and os.path.exists(prefsets_base_dir):
+            asdex_prefsets_dir = os.path.join(prefsets_base_dir, "ASDEX")
+            saabsaid_prefsets_dir = os.path.join(prefsets_base_dir, "SAABSAID")
+            
+            for fac_id in processed_facilities:
+                source_fac_path = os.path.join(asdex_prefsets_dir, fac_id)
+                
+                if os.path.exists(source_fac_path):
+                    target_fac_path = os.path.join(saabsaid_prefsets_dir, fac_id)
+                    
+                    try:
+                        # Copy old folder contents into SAABSAID directory structure safely
+                        if os.path.exists(target_fac_path):
+                            shutil.rmtree(target_fac_path)
+                        shutil.copytree(source_fac_path, target_fac_path)
+                        
+                        # Process target PrefSets.json layout properties
+                        prefsets_json_path = os.path.join(target_fac_path, "PrefSets.json")
+                        if os.path.exists(prefsets_json_path):
+                            with open(prefsets_json_path, "r", encoding="utf-8") as pf:
+                                prefsets_data = json.load(pf)
+                            
+                            # Map layout schema across each distinct prefset definition 
+                            for pref_set in prefsets_data:
+                                windows = pref_set.get("Windows", [])
+                                for win in windows:
+                                    update_window_schema(win)
+                            
+                            # Output file rewrite
+                            pref_json_str = json.dumps(prefsets_data, indent=2, ensure_ascii=False)
+                            pref_json_str = re.sub(r'\[\s*\n\s*\]', '[]', pref_json_str)
+                            
+                            with open(prefsets_json_path, "w", encoding="utf-8") as pf:
+                                pf.write(pref_json_str)
+                                
+                        print(f"  [+] PrefSets updated for target facility: {fac_id}")
+                    except Exception as e:
+                        print(f"  [!] Failed migrating PrefSets directory data for {fac_id}: {e}")
+
         if all_modified_profiles:
             max_mod_len = max(len(name) for name in all_modified_profiles.keys())
             print("\n  >>> SAID replacements complete:")
             for prof_name, changes in all_modified_profiles.items():
                 print(f"      {prof_name:<{max_mod_len + 2}}{changes}")
-            print("  [+] Status: Successfully updated all matching profiles.")
+            print("  [+] Status: Successfully updated all matching profiles and prefsets.")
         else:
             print("  [+] Status: Process finished, but no configurations required actual updates.")
 
