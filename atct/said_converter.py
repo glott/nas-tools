@@ -88,20 +88,47 @@ print()
 
 
 # ==============================================================================
-# [STEP 2/3]: PROFILE BACKUP
+# [STEP 2/3]: PROFILE & PREFSETS BACKUP
 # ==============================================================================
-print("[STEP 2/3] Creating safety backup of your current CRC profiles...")
+print("[STEP 2/3] Creating safety backup of your current CRC profiles and prefsets...")
 
-source_dir = os.path.expandvars(r"%localappdata%\CRC\Profiles")
+profiles_dir = os.path.expandvars(r"%localappdata%\CRC\Profiles")
+prefsets_dir = os.path.expandvars(r"%localappdata%\CRC\PrefSets")
+
 timestamp = datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 zip_filename = f"CRC Backup {timestamp}"
+temp_backup_dir = os.path.join(os.path.expandvars("%temp%"), f"CRC_Backup_Staging_{timestamp}")
 destination_zip_path = os.path.join(os.path.expandvars("%temp%"), zip_filename)
 
-if os.path.exists(source_dir):
-    shutil.make_archive(destination_zip_path, "zip", source_dir)
-    print(f"  [+] Success: Backup saved to %temp%\\{zip_filename}.zip\n")
-else:
-    print(f"  [-] ERROR: Profiles directory not found at {source_dir}. Backup aborted.\n")
+try:
+    # Create a fresh temporary folder to aggregate directories for the zip archive
+    os.makedirs(temp_backup_dir, exist_ok=True)
+    
+    profiles_copied = False
+    prefsets_copied = False
+
+    if os.path.exists(profiles_dir):
+        shutil.copytree(profiles_dir, os.path.join(temp_backup_dir, "Profiles"))
+        profiles_copied = True
+    else:
+        print(f"  [!] WARNING: Profiles directory not found at {profiles_dir}")
+
+    if os.path.exists(prefsets_dir):
+        shutil.copytree(prefsets_dir, os.path.join(temp_backup_dir, "PrefSets"))
+        prefsets_copied = True
+    else:
+        print(f"  [!] WARNING: PrefSets directory not found at {prefsets_dir}")
+
+    if profiles_copied or prefsets_copied:
+        shutil.make_archive(destination_zip_path, "zip", temp_backup_dir)
+        print(f"  [+] Success: Backup saved to %temp%\\{zip_filename}.zip\n")
+    else:
+        print("  [-] ERROR: Neither Profiles nor PrefSets directories were found. Backup aborted.\n")
+
+finally:
+    # Always clean up the temporary staging folder
+    if os.path.exists(temp_backup_dir):
+        shutil.rmtree(temp_backup_dir)
 
 
 # ==============================================================================
@@ -109,7 +136,6 @@ else:
 # ==============================================================================
 print("[STEP 3/3] Scanning CRC profiles for eligible SAID replacements...")
 
-profiles_dir = os.path.expandvars(r"%localappdata%\CRC\Profiles")
 asdex_to_saids = []
 eligible_profile_replacements = {}
 loaded_profiles = {}
