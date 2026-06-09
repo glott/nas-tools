@@ -15,8 +15,8 @@ import requests
 # INITIALIZATION & WARNING
 # ==============================================================================
 print("=" * 70)
-print(" NOTICE: This script will only replace ASDE-X displays with SAIDs if a")
-print(" facility has active SAID config and NO active ASDE-X config.")
+print(" NOTICE: This script will replace ASDE-X displays with SAIDs if a")
+print(" facility has an active SAID config available on vNAS.")
 print("=" * 70)
 print()
 
@@ -163,9 +163,9 @@ if os.path.exists(profiles_dir):
 
                         if ".Asdex." in display_type:
                             is_in_saids = facility_id in said_facilities
-                            is_in_asdex = facility_id in asdex_facilities
 
-                            if is_in_saids and not is_in_asdex:
+                            # Only requirement now is that the facility has a SAID configuration mapping
+                            if is_in_saids:
                                 if facility_id not in profile_changes:
                                     profile_changes.append(facility_id)
 
@@ -202,7 +202,6 @@ if os.path.exists(profiles_dir):
         all_modified_profiles = {}
         processed_facilities = set()
 
-        # Helper function to sort schema updates onto window components
         def update_window_schema(win):
             if win.get("DisplayType") == "Asdex":
                 win["DisplayType"] = "SaabSaid"
@@ -221,7 +220,7 @@ if os.path.exists(profiles_dir):
             win.clear()
             win.update(new_win_layout)
 
-        # Process the CRC Main Profiles
+        # Process Main Profiles
         for filename, (file_path, profile) in loaded_profiles.items():
             profile_name = profile.get("Name", "Unknown Profile")
             display_window_settings = profile.get("DisplayWindowSettings", [])
@@ -237,17 +236,16 @@ if os.path.exists(profiles_dir):
 
                         if ".Asdex." in display_type:
                             is_in_saids = facility_id in said_facilities
-                            is_in_asdex = facility_id in asdex_facilities
 
-                            if is_in_saids and not is_in_asdex:
+                            if is_in_saids:
                                 processed_facilities.add(facility_id)
                                 
-                                # 1. Main display modifications
+                                # 1. Main display type swap & properties cleanup
                                 display["$type"] = "Vatsim.Nas.Crc.Ui.Displays.SaabSaid.Settings.SaabSaidDisplaySettings, CRC"
                                 display.pop("ActivePositionIds", None)
                                 display.pop("Volume", None)
 
-                                # 2. Profile inner windows modification
+                                # 2. Process inner display window definitions
                                 pref_set = display.get("CurrentPrefSet", {})
                                 inner_windows = pref_set.get("Windows", [])
                                 for win in inner_windows:
@@ -272,7 +270,7 @@ if os.path.exists(profiles_dir):
                 except Exception as e:
                     pass
 
-        # Process any linked PrefSets directory changes
+        # Process PrefSets Directories
         if processed_facilities and os.path.exists(prefsets_base_dir):
             asdex_prefsets_dir = os.path.join(prefsets_base_dir, "ASDEX")
             saabsaid_prefsets_dir = os.path.join(prefsets_base_dir, "SAABSAID")
@@ -284,24 +282,20 @@ if os.path.exists(profiles_dir):
                     target_fac_path = os.path.join(saabsaid_prefsets_dir, fac_id)
                     
                     try:
-                        # Copy old folder contents into SAABSAID directory structure safely
                         if os.path.exists(target_fac_path):
                             shutil.rmtree(target_fac_path)
                         shutil.copytree(source_fac_path, target_fac_path)
                         
-                        # Process target PrefSets.json layout properties
                         prefsets_json_path = os.path.join(target_fac_path, "PrefSets.json")
                         if os.path.exists(prefsets_json_path):
                             with open(prefsets_json_path, "r", encoding="utf-8") as pf:
                                 prefsets_data = json.load(pf)
                             
-                            # Map layout schema across each distinct prefset definition 
                             for pref_set in prefsets_data:
                                 windows = pref_set.get("Windows", [])
                                 for win in windows:
                                     update_window_schema(win)
                             
-                            # Output file rewrite
                             pref_json_str = json.dumps(prefsets_data, indent=2, ensure_ascii=False)
                             pref_json_str = re.sub(r'\[\s*\n\s*\]', '[]', pref_json_str)
                             
