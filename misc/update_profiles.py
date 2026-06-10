@@ -11,7 +11,7 @@ BACKUP_DIR = R'%CRC%\Backups'
 
 # If 'True', files in your CRC folder will be replaced with updated files
 # Set this to either 'True' or 'False' (without quotes)
-RUN_UPDATE = True                                   
+RUN_UPDATE = True                                                   
 
 # This is the directory of the update files
 # The UPDATE_DIR must have the same folder structure as CRC
@@ -51,6 +51,8 @@ def backup_files(main_dir, sub_dirs):
 def copy_files(source_dir, dest_dir, sub_dirs):
     prev_header = ''
     asdex_print = False
+    saabsaid_print = False
+    
     for dir_ in sub_dirs:
         root_dir = os.path.join(source_dir, dir_)
         if 'Aliases' in root_dir:
@@ -72,10 +74,16 @@ def copy_files(source_dir, dest_dir, sub_dirs):
                         if not asdex_print and 'ASDEX' in root:
                             print('\nUpdated \'PrefSets/ASDEX\'')
                             asdex_print = True
+                        elif not saabsaid_print and 'SAABSAID' in root:
+                            print('\nUpdated \'PrefSets/SAABSAID\'')
+                            saabsaid_print = True
                         
                         if 'ASDEX' in root:
                             print('    ' + header.replace(os.sep, '/') \
                                 .replace('PrefSets/ASDEX/', ''))
+                        elif 'SAABSAID' in root:
+                            print('    ' + header.replace(os.sep, '/') \
+                                .replace('PrefSets/SAABSAID/', ''))
                         else:
                             print('\nUpdated \'' + header.replace(os.sep, '/') + '\'')
 
@@ -84,7 +92,7 @@ def copy_files(source_dir, dest_dir, sub_dirs):
                         os.makedirs(dest_path)
 
                     shutil.copy(file_path, dest_path)
-                    if not 'ASDEX' in root:
+                    if not 'ASDEX' in root and not 'SAABSAID' in root:
                         print('    ' + file.split('.')[0])
 
 print('=============================================')        
