@@ -1,0 +1,7 @@
+<!DOCTYPE shortcuts>
+<qgsshortcuts version="1.1" locale="en_US">
+    <action shortcut="Ctrl+E" name="Toggle Editing" setting="/shortcuts/mActionToggleEditing"/>
+    <action shortcut="Ctrl+M" name="Move Feature(s)" setting="/shortcuts/mActionMoveFeature"/>
+    <action shortcut="Ctrl+W" name="Select Feature(s)" setting="/shortcuts/mActionSelectFeatures"/>
+    <action shortcut="Ctrl+R" name="Vertex Tool (Current Layer)" setting="/shortcuts/mActionVertexToolActiveLayer"/>
+</qgsshortcuts>
