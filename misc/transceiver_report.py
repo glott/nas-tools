@@ -178,7 +178,7 @@ def main():
     print("This script checks the transceiver setups for all positions in an ARTCC.")
     print("  * TRANSCEIVERS        T       Lists all transceivers assigned to the position.")
     print("  * MATCHING            M       Lists positions with the same transceivers.")
-    print("  * NOT MATCHING        X       Lists positions with the same prefix/suffix family but")
+    print("  * NOT MATCHING        X       Lists positions with the same facility type but")
     print("                                different transceivers assigned.")
     print()
     
