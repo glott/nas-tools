@@ -173,7 +173,7 @@ def main():
     }
     
     print("################################################################################")
-    print("#                               TRANSCEIVER REPORT                             #")
+    print("#                              TRANSCEIVER REPORT                              #")
     print("################################################################################")
     print("This script checks the transceiver setups for all positions in an ARTCC.")
     print("  * TRANSCEIVERS        T       Lists all transceivers assigned to the position.")
