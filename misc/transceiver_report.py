@@ -27,11 +27,25 @@ def fetch_facility_data(facility_id):
         sys.exit(1)
 
 def get_prefix_and_suffix(callsign):
-    """Extracts the prefix and suffix from a callsign."""
+    """Extracts the prefix and suffix from a callsign, grouping interchangeable suffixes."""
     if "_" in callsign:
         parts = callsign.split("_")
         prefix = parts[0]
         suffix = "_" + parts[-1]
+        
+        # Define the interchangeable suffix groups
+        ctr_group = {"_CTR", "_FSS", "_TMU"}
+        app_group = {"_APP", "_DEP"}
+        twr_group = {"_TWR", "_GND", "_DEL", "_RMP"}
+        
+        # Normalize the suffix based on its group family
+        if suffix in ctr_group:
+            suffix = "_CTR_FAMILY"
+        elif suffix in app_group:
+            suffix = "_APP_FAMILY"
+        elif suffix in twr_group:
+            suffix = "_TWR_FAMILY"
+            
         return prefix, suffix
     return callsign, ""
 
@@ -159,12 +173,12 @@ def main():
     }
     
     print("################################################################################")
-    print("#                              TRANSCEIVER REPORT                              #")
+    print("#                               TRANSCEIVER REPORT                             #")
     print("################################################################################")
     print("This script checks the transceiver setups for all positions in an ARTCC.")
     print("  * TRANSCEIVERS        T       Lists all transceivers assigned to the position.")
     print("  * MATCHING            M       Lists positions with the same transceivers.")
-    print("  * NOT MATCHING        X       Lists positions with the same prefix/suffix but")
+    print("  * NOT MATCHING        X       Lists positions with the same prefix/suffix family but")
     print("                                different transceivers assigned.")
     print()
     
@@ -223,7 +237,7 @@ def main():
     print()
     
     # Live updating countdown sequence using carriage return '\r'
-    for remaining in range(15, 0, -1):
+    for remaining in range(60, 0, -1):
         print(f"\rExiting script in {remaining:02d} seconds...", end="", flush=True)
         time.sleep(1)
         
