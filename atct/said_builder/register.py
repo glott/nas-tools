@@ -19,7 +19,7 @@ from tc import TC
 
 def by_lines(ap):
     obs = []
-    for color in ('#a29857', '#858585'):
+    for color in ('#a29857', '#fcb737', '#858585'):
         for l in reg.lines(ap, '_taxi_lines.geojson', color):
             if l.length >= 8:
                 obs += reg.offsets(l)
