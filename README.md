@@ -54,7 +54,7 @@ also to Downloads, in the shape vNAS expects.
 
 | Tool | What it does |
 |------|--------------|
-| [`crc-shift-bookmarks/`](misc/crc-shift-bookmarks/) | Background helper that makes Shift+Numpad recall CRC bookmarks beyond the built-in Ctrl+Numpad 0–9, with a setup script that starts it whenever CRC opens. See its [README](misc/crc-shift-bookmarks/README.md). |
+| [`crc_shift_bookmarks/`](misc/crc_shift_bookmarks/) | Background helper that makes Shift+Numpad recall CRC bookmarks beyond the built-in Ctrl+Numpad 0–9, with a setup script that starts it whenever CRC opens. See its [README](misc/crc_shift_bookmarks/README.md). |
 | `update_profiles.py` | Backs up your CRC Profiles, PrefSets and aliases to a dated zip, then (optionally) copies updated ones into CRC from a folder that mirrors CRC's layout, such as a synced Dropbox folder. |
 | `transceiver_report.py` | Checks the transceiver setup of every position in an ARTCC using the vNAS data API. For each position it lists its transceivers, the positions that share them, and positions of the same type that do not. Saves the report to Downloads. |
 | `toggle_invert_numpad.py` | Flips the "invert numeric keypad" setting in every CRC profile at once. |
