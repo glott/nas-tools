@@ -12,7 +12,7 @@ with their own folder have their own README.
 | [`stars/`](#stars) | Converting STARS adaptation into vNAS data, and cleaning STARS video maps |
 | [`misc/`](#misc--crc-and-everything-else) | CRC profile utilities and other small helpers |
 
-## `atct/` – Tower cab and ASDE-X / SAID
+## [`atct/`](atct/) – Tower cab and ASDE-X / SAID
 
 | Tool | What it does |
 |------|--------------|
@@ -24,7 +24,7 @@ with their own folder have their own README.
 | `ASDEX-SAID Style.qml` | QGIS layer style that colours features by their `said` or `asdex` property (runway, taxiway, apron, structure). Load it from Layer Properties → Symbology → Style → Load Style. |
 | `qgis-shortcuts.xml` | QGIS keyboard shortcuts for map drawing: Ctrl+E toggle editing, Ctrl+M move feature, Ctrl+W select features, Ctrl+R vertex tool. Import it from Settings → Keyboard Shortcuts. |
 
-## `eram/`
+## [`eram/`](eram/)
 
 | Tool | What it does |
 |------|--------------|
@@ -33,7 +33,7 @@ with their own folder have their own README.
 | `rename_maps.py` | Copies the video maps CRC has downloaded for an ARTCC (`%localappdata%\CRC\VideoMaps\<ARTCC>`, named by ID) to `Downloads\<ARTCC> Maps`, renamed to their original source file names. |
 | `find_map_filters.py` | Scans a folder of GeoJSON maps for features on a given filter (filter 1 as written), prints the matches and copies those files to a `SELECT` subfolder. |
 
-## `stars/`
+## [`stars/`](stars/)
 
 Most of these read a STARS adaptation report saved as a text file in your Downloads folder and write JSON,
 also to Downloads, in the shape vNAS expects.
@@ -50,7 +50,7 @@ also to Downloads, in the shape vNAS expects.
 | `remove_borders.py` | Removes the circular range border from STARS video maps: every point at or beyond the map radius from the point of tangency is deleted. It can estimate the radius and the point of tangency when they are not known. Output goes to an `OUTPUT` subfolder. |
 | `track_ownership.ipynb` | Logs which TCPs own tracks at the listed facilities every five minutes, from the live dSTARS feed, into `<facility>_track_ownership.txt`. |
 
-## `misc/` – CRC and everything else
+## [`misc/`](misc/) – CRC and everything else
 
 | Tool | What it does |
 |------|--------------|
