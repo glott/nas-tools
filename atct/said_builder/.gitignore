@@ -1,0 +1,5 @@
+tiles/
+new/
+out/
+__pycache__/
+config.json
